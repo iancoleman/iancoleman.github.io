@@ -22865,7 +22865,8 @@ WORDLISTS = {
 
     function calcBip32Seed(phrase, passphrase, path) {
         var seed = mnemonic.toSeed(phrase, passphrase);
-        bip32RootKey = Bitcoin.HDNode.fromSeedHex(seed, network);
+        var seedHash = Bitcoin.crypto.sha256(seed).toString("hex");
+        bip32RootKey = Bitcoin.HDNode.fromSeedHex(seedHash, network);
         bip32ExtendedKey = bip32RootKey;
         // Derive the key from the path
         var pathBits = path.split("/");
