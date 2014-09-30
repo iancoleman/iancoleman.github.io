@@ -6256,6 +6256,17 @@ button.close {
                             <p>For more info see the <a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki" target="_blank">BIP39 spec</a></p>
                         </div>
                         <div class="form-group">
+                            <label for="network-phrase" class="col-sm-2 control-label">Coin</label>
+                            <div class="col-sm-10">
+                                <select id="network-phrase" class="network form-control">
+                                    <option value="bitcoin">Bitcoin</option>
+                                    <option value="bitcoin-testnet">Bitcoin Testnet</option>
+                                    <option value="litecoin">Litecoin</option>
+                                    <option value="dogecoin">Dogecoin</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
                             <label for="phrase" class="col-sm-2 control-label">BIP39 Mnemonic</label>
                             <div class="col-sm-10">
                                 <textarea id="phrase" class="phrase form-control"></textarea>
@@ -6294,9 +6305,12 @@ button.close {
                 <div class="col-md-12">
                     <h2>Derivation Path</h2>
                     <ul class="derivation-type nav nav-tabs" role="tablist">
-                        <li class="active">
-                        <a href="#bip44" role="tab" data-toggle="tab">BIP44</a></li>
-                        <li><a href="#bip32" role="tab" data-toggle="tab">BIP32</a></li>
+                        <li id="bip44-tab" class="active">
+                            <a href="#bip44" role="tab" data-toggle="tab">BIP44</a>
+                        </li>
+                        <li id="bip32-tab">
+                            <a href="#bip32" role="tab" data-toggle="tab">BIP32</a>
+                        </li>
                     </ul>
                     <div class="derivation-type tab-content">
                         <div id="bip44" class="tab-pane active">
@@ -6305,6 +6319,16 @@ button.close {
                                 <div class="col-sm-2"></div>
                                 <div class="col-sm-10">
                                     <p>For more info see the <a href="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki" target="_blank">BIP44 spec</a></p>
+                                </div>
+                                <div class="form-group">
+                                    <label for="network-bip44" class="col-sm-2 control-label">Coin</label>
+                                    <div class="col-sm-10">
+                                        <select id="network-bip44" class="network form-control">
+                                            <option value="bitcoin">Bitcoin</option>
+                                            <option value="bitcoin-testnet">Bitcoin Testnet</option>
+                                            <option value="litecoin">Litecoin</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="purpose" class="col-sm-2 control-label">
@@ -6510,9 +6534,9 @@ button.close {
                     </p>
 
                     <p>
-                        <span>asmCrypto - </span>
-                        <a href="https://github.com/vibornoff/asmcrypto.js" target="_blank">
-                            https://github.com/vibornoff/asmcrypto.js
+                        <span>sjcl - </span>
+                        <a href="https://github.com/bitwiseshiftleft/sjcl" target="_blank">
+                            https://github.com/bitwiseshiftleft/sjcl
                         </a>
                     </p>
 
@@ -33818,12 +33842,19 @@ var Mnemonic = function(language) {
     var phraseChangeTimeoutEvent = null;
 
     var DOM = {};
+    DOM.network = $(".network");
+    DOM.phraseNetwork = $("#network-phrase");
+    DOM.bip44Network = $("#network-bip44");
     DOM.phrase = $(".phrase");
     DOM.passphrase = $(".passphrase");
     DOM.generate = $(".generate");
     DOM.rootKey = $(".root-key");
     DOM.extendedPrivKey = $(".extended-priv-key");
     DOM.extendedPubKey = $(".extended-pub-key");
+    DOM.bip32tab = $("#bip32-tab");
+    DOM.bip44tab = $("#bip44-tab");
+    DOM.bip32panel = $("#bip32");
+    DOM.bip44panel = $("#bip44");
     DOM.bip32path = $("#bip32-path");
     DOM.bip44path = $("#bip44-path");
     DOM.bip44purpose = $("#bip44 .purpose");
@@ -33844,6 +33875,7 @@ var Mnemonic = function(language) {
 
     function init() {
         // Events
+        DOM.network.on("change", networkChanged);
         DOM.phrase.on("input", delayedPhraseChanged);
         DOM.passphrase.on("input", delayedPhraseChanged);
         DOM.generate.on("click", generateClicked);
@@ -33863,6 +33895,35 @@ var Mnemonic = function(language) {
     }
 
     // Event handlers
+
+    function networkChanged(e) {
+        var n = e.target.value;
+        if (n == "bitcoin") {
+            network = Bitcoin.networks.bitcoin;
+            DOM.bip44coin.val(0);
+            setBip44DerivationPath();
+            enableBip44Tab();
+        }
+        else if (n == "bitcoin-testnet") {
+            network = Bitcoin.networks.testnet;
+            DOM.bip44coin.val(1);
+            setBip44DerivationPath();
+            enableBip44Tab();
+        }
+        else if (n == "litecoin") {
+            network = Bitcoin.networks.litecoin;
+            DOM.bip44coin.val(2);
+            setBip44DerivationPath();
+            enableBip44Tab();
+        }
+        else if (n == "dogecoin") {
+            network = Bitcoin.networks.dogecoin;
+            disableBip44Tab();
+        }
+        DOM.phraseNetwork.val(n);
+        DOM.bip44Network.val(n);
+        delayedPhraseChanged();
+    }
 
     function delayedPhraseChanged() {
         hideValidationError();
@@ -34172,6 +34233,28 @@ var Mnemonic = function(language) {
         DOM.feedback
             .text("")
             .hide();
+    }
+
+    function enableBip44Tab() {
+        // show bip44 tab (but don't select it)
+        DOM.bip44tab.removeClass("hidden");
+        DOM.bip44panel.removeClass("hidden");
+    }
+
+    function disableBip44Tab() {
+        // hide bip44 tab
+        DOM.bip44tab.addClass("hidden");
+        DOM.bip44tab.removeClass("active");
+        // hide bip44 panel
+        DOM.bip44panel.addClass("hidden");
+        DOM.bip44panel.removeClass("active");
+        // show bip32 tab
+        DOM.bip32tab.addClass("active");
+        // show bip32 panel
+        DOM.bip32panel.addClass("active");
+        // set the derivation path
+        var activePath = $("#bip32 .path");
+        derivationPath = activePath.val();
     }
 
     init();
