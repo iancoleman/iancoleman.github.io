@@ -25,6 +25,13 @@ code {
     background: rgba(0,0,0,0);
 }
 
+.impossible .capped .size,
+.impossible .unlimited .speed,
+.impossible.processing .rate
+{
+    border: 3px solid #F00;
+}
+
 .stats {
     margin-top: 20px;
     margin-bottom: 20px;
@@ -40,6 +47,7 @@ code {
 }
 .popup-content {
     display: none;
+    text-align: left;
     position: absolute;
     background-color: #FFF;
     border: 1px solid #999;
@@ -56,6 +64,31 @@ code {
 
 .costs .bandwidth .options {
     display: inline-block;
+}
+
+.costs .percent {
+    position: relative;
+    padding: 0;
+}
+.costs .percent .value,
+.costs .percent .bar {
+    position: absolute;
+    text-align: center;
+    top: 0;
+    left: 0;
+    height: 20px;
+    margin: 15px 0;
+}
+.costs .percent .value {
+    width: 100%;
+}
+.costs .percent .bar {
+    width: 0;
+    background-color: #B5B7F1;
+}
+
+.large-chart {
+    width: 100%;
 }
 
 /* http://stackoverflow.com/a/22559163 */

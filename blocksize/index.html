@@ -8,13 +8,13 @@
         <link rel="stylesheet" href="css/app.css">
     </head>
     <body>
-        <div class="container">
+        <div class="container-fluid">
             <div class="about">
                 <h1>Block Size Calculator</h1>
                 <p>What is the effect of changing the bitcoin <code>MAX_BLOCK_SIZE</code>?</p>
             </div>
             <div class="past">
-                <h1>Historical Context</h1>
+                <h2>Historical Context</h2>
                 <div class="load">
                     <button class="btn btn-default">Load Data</button>
                     (<span class="size">large</span> file)
@@ -29,6 +29,14 @@
                         <input class="start form-control medium" type="date" id="start" x-url-param>
                         and
                         <input class="end form-control medium" type="date" id="end" x-url-param>
+                        <label class="checkbox-inline">
+                            <input type="checkbox" class="large-charts">
+                            Large charts
+                        </label>
+                        <label class="checkbox-inline">
+                            <input type="checkbox" class="logarithmic">
+                            Logarithmic Scale
+                        </label>
                     </div>
                     <div class="stats">
                         <strong><span class="blocks">1053</span></strong>
@@ -56,7 +64,7 @@
                 </div>
             </div>
             <div class="parameters">
-                <h1>Parameters</h1>
+                <h2>New Block Size</h2>
                 Simulate a
                 Max Block Size of
                 <input class="block-size form-control small" type="number" value="1" id="block-size" x-url-param>
@@ -68,14 +76,14 @@
                 seconds.
             </div>
             <div>
-                <h1>Results</h1>
-                <p>To support this scenario, the following constraints must be viable for all full nodes:</p>
+                <h2>Constraints</h2>
+                <p>To support this new block size, the following constraints must be viable for all full nodes:</p>
                 <table class="results table table-striped">
                     <thead>
                         <th>Constraint</th>
                         <th>Condition</th>
                         <th>Value</th>
-                        <th>Unites</th>
+                        <th>Units</th>
                     </thead>
                     <tbody>
                         <tr>
@@ -106,7 +114,7 @@
                 </table>
             </div>
             <div>
-                <h1>Impact</h1>
+                <h2>Viability</h2>
                 <p>
                     How does this affect the ability of the bitcoin network to
                     achieve
@@ -146,6 +154,7 @@
                             <th>Price</th>
                             <th>Info</th>
                             <th class="text-right">Annual Cost</th>
+                            <th>% Cost</th>
                         </thead>
                         <tbody>
                             <tr class="bandwidth">
@@ -155,26 +164,11 @@
                                     </p>
                                 </td>
                                 <td>
-                                    <select class="type form-control">
-                                        <option value="unlimited">Unlimited</option>
+                                    <select class="type form-control" id="bandwidth-plan" x-url-param>
                                         <option value="capped">Capped</option>
+                                        <option value="unlimited">Unlimited</option>
                                     </select>
-                                    <div class="unlimited options">
-                                        bandwidth for
-                                        $<input class="price form-control small" value="70" type="number" id="unlimited-price" x-url-param>
-                                        per
-                                        <select class="time form-control">
-                                            <option value="3600">hour</option>
-                                            <option value="86400">day</option>
-                                            <option value="604800">week</option>
-                                            <option value="2628000" selected>month</option>
-                                            <option value="31536000">year</option>
-                                        </select>
-                                        at
-                                        <input class="speed form-control small" value="1000" type="number" id="unlimited-speed" x-url-param>
-                                        Mbps
-                                    </div>
-                                    <div class="capped options hidden">
+                                    <div class="capped options">
                                         bandwidth at
                                         <input class="size form-control small" value="1024" type="number" id="capped-size" x-url-param>
                                         GB per
@@ -188,12 +182,44 @@
                                         for
                                         $<input class="price form-control small" value="49.99" type="number" id="capped-price" x-url-param>
                                     </div>
+                                    <div class="unlimited options hidden">
+                                        bandwidth for
+                                        $<input class="price form-control small" value="70" type="number" id="unlimited-price" x-url-param>
+                                        per
+                                        <select class="time form-control">
+                                            <option value="3600">hour</option>
+                                            <option value="86400">day</option>
+                                            <option value="604800">week</option>
+                                            <option value="2628000" selected>month</option>
+                                            <option value="31536000">year</option>
+                                        </select>
+                                        at
+                                        <input class="speed form-control small" value="100" type="number" id="unlimited-speed" x-url-param>
+                                        Mbps
+                                    </div>
                                 </td>
-                                <td></td>
+                                <td class="popup text-center" title="">
+                                    <p class="form-control-static">&plus;</p>
+                                    <div class="popup-content">
+                                        <div class="error text-danger hidden">
+                                            This plan cannot provide enough bandwidth to run a full node.
+                                        </div>
+                                        <span>
+                                            Days per month is calculated as 365 / 12.
+                                            This is slightly different to the definition
+                                            of a month used in the Constraints section,
+                                            which is 31 days.
+                                        </span>
+                                    </div>
+                                </td>
                                 <td class="text-right">
                                     <p class="form-control-static">
                                         $<span class="total">?</span>
                                     </p>
+                                </td>
+                                <td class="percent">
+                                    <div class="bar"></div>
+                                    <div class="value"></div>
                                 </td>
                             </tr>
                             <tr class="disk">
@@ -213,6 +239,10 @@
                                         $<span class="total">?</span>
                                     </p>
                                 </td>
+                                <td class="percent">
+                                    <div class="bar"></div>
+                                    <div class="value"></div>
+                                </td>
                             </tr>
                             <tr class="processing">
                                 <td>
@@ -229,6 +259,9 @@
                                 <td class="popup text-center">
                                     <p class="form-control-static">&plus;</p>
                                     <div class="popup-content">
+                                        <div class="error text-danger hidden">
+                                            This computer is unable to process the required number of transactions.
+                                        </div>
                                         Total purchase and running cost for five year lifespan
                                     </div>
                                 </td>
@@ -236,6 +269,10 @@
                                     <p class="form-control-static">
                                         $<span class="total">?</span>
                                     </p>
+                                </td>
+                                <td class="percent">
+                                    <div class="bar"></div>
+                                    <div class="value"></div>
                                 </td>
                             </tr>
                             <tr class="labor">
@@ -245,9 +282,9 @@
                                     </p>
                                 </td>
                                 <td>
-                                    <input class="hours form-control small" value="50" type="number" id="labor-hours" x-url-param>
+                                    <input class="hours form-control small" value="25" type="number" id="labor-hours" x-url-param>
                                     hours per year at a rate of
-                                    $<input class="price form-control small" value="100" type="number" id="labor-price" x-url-param>
+                                    $<input class="price form-control small" value="25" type="number" id="labor-price" x-url-param>
                                     per hour
                                 </td>
                                 <td class="popup text-center" title="">
@@ -261,6 +298,10 @@
                                         $<span class="total">?</span>
                                     </p>
                                 </td>
+                                <td class="percent">
+                                    <div class="bar"></div>
+                                    <div class="value"></div>
+                                </td>
                             </tr>
                             <tr class="final">
                                 <td></td>
@@ -270,12 +311,13 @@
                                     <strong>TOTAL: $<span class="total">?</span></strong>
                                     <p>per year</p>
                                 </td>
+                                <td></td>
                             </tr>
                         </tbody>
                     </table>
                </div>
                <div class="complexity">
-                   <h1>Complexity</h1>
+                   <h2>Complexity</h2>
                    <p>This is an <strong>extremely complex topic</strong> with subtlety and nuance.</p>
                    <ul>
                        <li>Bandwidth from newly announced blocks is not the only consumption of bandwidth resouces.</li>
@@ -290,9 +332,10 @@
                        <li>Blocks may arrive before the last one is received or processed.</li>
                        <li>Transaction backlog and mempool requirements.</li>
                        <li>Fees and the fee market, and how this affects the incentive structure for all participants of the network.</li>
-                       <li>The difference between miners and full nodes.</li>
+                       <li>The operational difference between miners and full nodes.</li>
                        <li>The impact of orphan blocks and reorgs.</li>
-                       <li>Not all transaction processing produces the same cpu load.</li>
+                       <li>The processing load of transactions is not identical for every transaction.</li>
+                       <li>The size (ie bytes) of transactions is not identical for every transaction.</li>
                        <li>The impact of SPV wallets and miners, ie varying degrees of verification.</li>
                        <li>The impact of alternative transaction techniques such as lightning network.</li>
                        <li>The impact of block propagation techniques such as invertible bloom lookup tables.</li>
@@ -301,6 +344,19 @@
                        <li>The value for max block size may be fixed or dynamic.</li>
                        <li>Frequency and magnitude of worst-case-scenarios and attacks is difficult to predict.</li>
                        <li>Factors-of-safety have not been considered.</li>
+                       <li>Willingness of participants to upgrade or not due to changes to max block size.</li>
+                       <li>Participants may be gained or lost due to changes to the max block size.</li>
+                       <li>Impact of changes to the max block size on the bitcoin market such as price, trading volume, liquidity, perception etc, thus affecting the incentives.</li>
+                       <li>Impact of cryptographic changes that may affect the information density per block, such as schnorr signatures.</li>
+                       <li>Impact of privacy features such as coinjoin.</li>
+                       <li>Impact of alternative block size features such as segregated witness.</li>
+                       <li>Management of Unspent Transaction Outputs with larger block sizes.</li>
+                       <li>The rate of future technological developments, eg Moore's Law, as it relates to bandwidth, disk space and computation speed.</li>
+                       <li>The amount of parallel processing, storage and bandwidth that can be done and assosciated economic effect.</li>
+                       <li>The number of peers connected to the node.</li>
+                       <li>The acceptable latency of blocks when 'catching up' in a series of good luck from miners.</li>
+                       <li>The effect of pruning nodes vs full nodes.</li>
+                       <li>Block timestamps are 'as-reported' by miners, and may not reflect the true time, possibly affecting the timing stats above.</li>
                    </ul>
                    <p>Without a full understanding of these complexities, there may be risk to changing the bitcoin max block size.</p>
                </div>
@@ -310,7 +366,7 @@
         <script src="js/select.js"></script>
         <script src="js/urlparams.js"></script>
         <script src="js/papaparse.min.js"></script>
-        <script src="js/Chart.js"></script>
+        <script src="js/Chart.min.js"></script>
         <script src="js/block-data.js"></script>
         <script src="js/results.js"></script>
 

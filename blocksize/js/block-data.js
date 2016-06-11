@@ -14,10 +14,28 @@
     DOM.sizekb = select(".stats .sizekb");
     DOM.sizetxs = select(".stats .sizetxs");
     DOM.timing = select(".stats .timing");
+    DOM.timeseries = select(".stats .timeseries");
+    DOM.largeCharts = select(".large-charts");
+    DOM.logarithmic = select(".logarithmic");
+    DOM.sizeChart = select(".chart .size");
+    DOM.txlengthChart = select(".chart .txlength");
+    DOM.timingChart = select(".chart .timing");
+    DOM.timeseriesChart = select(".chart .timeseries");
 
     function init() {
         showDataSize();
+        setEvents();
+        setChartOptions();
+    }
+
+    function setEvents() {
         DOM.loadButton.addEventListener("click", loadData);
+        DOM.largeCharts.addEventListener("change", setLargeCharts);
+        DOM.logarithmic.addEventListener("change", render);
+    }
+
+    function setChartOptions() {
+        Chart.defaults.global.animation.duration = 0;
     }
 
     function showDataSize() {
@@ -126,6 +144,14 @@
         }
         timingLabels[0] = "< 0s";
         timingLabels[timingLabels.length-1] = (maxTiming) + "s+";
+        //  Timeseries values
+        var tsLabels = [];
+        var tsMedianSize = [];
+        var tsMeanSize = [];
+        var tsMaxSize = [];
+        var tsMeanTime = [];
+        var thisMonthSizes = [];
+        var thisMonthTimes = [];
         // Stats
         var totalBlocks = 0;
         var cumSizekb = 0;
@@ -134,9 +160,38 @@
         // Parse the data
         var start = new Date(DOM.start.value).getTime() / 1000;
         var end = new Date(DOM.end.value).getTime() / 1000;
+        var firstDate = new Date(data[0].time * 1000);
+        var firstMonth = monthForDate(firstDate);
         for (var i=0; i<data.length; i++) {
             var block = data[i];
-            // Ignore data outside the time range
+            // Timeseries data
+            var blockDate = new Date(block.time * 1000);
+            var thisMonth = monthForDate(blockDate);
+            var monthIndex = thisMonth - firstMonth;
+            if (monthIndex > tsMedianSize.length || i == data.length-1) {
+                // Month has ended, put past month into time series
+                thisMonthSizes.sort(function(a,b) { return a-b });
+                var medianSize = decimalPlaces(median(thisMonthSizes), 1);
+                tsMedianSize.push({ x: monthIndex, y: medianSize });
+                var meanSize = decimalPlaces(mean(thisMonthSizes), 1);
+                tsMeanSize.push({ x: monthIndex, y: meanSize });
+                var maxSize = decimalPlaces(thisMonthSizes[thisMonthSizes.length - 1], 1);
+                tsMaxSize.push({ x: monthIndex, y: maxSize });
+                var meanTime = decimalPlaces(mean(thisMonthTimes), 1);
+                tsMeanTime.push({ x: monthIndex, y: meanTime });
+                tsLabels.push(dateStr(prevBlock.time).substring(0,7));
+                // Reset monthly stats
+                thisMonthSizes = [];
+                thisMonthTimes = [];
+            }
+            // accumulate data for this month
+            thisMonthSizes.push(parseFloat(block.size) / 1000);
+            if (i > 0) {
+                var prevBlock = data[i-1];
+                var time = block.time - prevBlock.time;
+                thisMonthTimes.push(time);
+            }
+            // Ignore data outside the time range for histograms
             if (block.time < start || block.time > end) {
                 continue;
             }
@@ -170,11 +225,15 @@
                 cumTiming += timing;
             }
         }
+        // Work out the scale type
+        var scaleType = "linear";
+        if (DOM.logarithmic.checked) {
+            scaleType = "logarithmic";
+        }
         // Chart the size
-        var size = select(".chart .size");
-        size.innerHTML = "";
+        DOM.sizeChart.innerHTML = "";
         var sizeCanvas = document.createElement("canvas");
-        size.appendChild(sizeCanvas);
+        DOM.sizeChart.appendChild(sizeCanvas);
         new Chart(sizeCanvas, {
             type: 'bar',
             data: {
@@ -184,12 +243,22 @@
                     data: sizeValues,
                 }],
             },
+            options: {
+                title: {
+                    display: true,
+                    text: "Block Size",
+                },
+                scales: {
+                    yAxes: [{
+                        type: scaleType,
+                    }]
+                }
+            }
         });
         // Chart the txlength
-        var txlength = select(".chart .txlength");
-        txlength.innerHTML = "";
+        DOM.txlengthChart.innerHTML = "";
         var txlengthCanvas = document.createElement("canvas");
-        txlength.appendChild(txlengthCanvas);
+        DOM.txlengthChart.appendChild(txlengthCanvas);
         new Chart(txlengthCanvas, {
             type: 'bar',
             data: {
@@ -199,12 +268,22 @@
                     data: txlengthValues,
                 }],
             },
+            options: {
+                title: {
+                    display: true,
+                    text: "Txs Per Block",
+                },
+                scales: {
+                    yAxes: [{
+                        type: scaleType,
+                    }]
+                }
+            }
         });
         // Chart the timing
-        var timing = select(".chart .timing");
-        timing.innerHTML = "";
+        DOM.timingChart.innerHTML = "";
         var timingCanvas = document.createElement("canvas");
-        timing.appendChild(timingCanvas);
+        DOM.timingChart.appendChild(timingCanvas);
         var size = new Chart(timingCanvas, {
             type: 'bar',
             data: {
@@ -214,6 +293,84 @@
                     data: timingValues,
                 }],
             },
+            options: {
+                title: {
+                    display: true,
+                    text: "Time Between Blocks",
+                },
+                scales: {
+                    yAxes: [{
+                        type: scaleType,
+                    }]
+                }
+            }
+        });
+        // Chart the time series
+        DOM.timeseriesChart.innerHTML = "";
+        var timeseriesCanvas = document.createElement("canvas");
+        DOM.timeseriesChart.appendChild(timeseriesCanvas);
+        var maxSizeColor = "#D62728";
+        var meanSizeColor = "#FF7F0E";
+        var medianSizeColor = "#2CA02C";
+        var meanTimeColor = "#1F77B4";
+        var size = new Chart(timeseriesCanvas, {
+            type: 'line',
+            data: {
+                labels: tsLabels,
+                datasets: [
+                    {
+                        label: 'Max Size',
+                        data: tsMaxSize,
+                        fill: false,
+                        borderColor: maxSizeColor,
+                        pointBorderColor: maxSizeColor,
+                        pointBackgroundColor: maxSizeColor,
+                        backgroundColor: maxSizeColor,
+                        pointRadius: 1,
+                    },
+                    {
+                        label: 'Avg Size',
+                        data: tsMeanSize,
+                        fill: false,
+                        borderColor: meanSizeColor,
+                        pointBorderColor: meanSizeColor,
+                        pointBackgroundColor: meanSizeColor,
+                        backgroundColor: meanSizeColor,
+                        pointRadius: 1,
+                    },
+                    {
+                        label: 'Median Size',
+                        data: tsMedianSize,
+                        fill: false,
+                        borderColor: medianSizeColor,
+                        pointBorderColor: medianSizeColor,
+                        pointBackgroundColor: medianSizeColor,
+                        backgroundColor: medianSizeColor,
+                        pointRadius: 1,
+                    },
+                    {
+                        label: 'Avg Time',
+                        data: tsMeanTime,
+                        fill: false,
+                        borderColor: meanTimeColor,
+                        pointBorderColor: meanTimeColor,
+                        pointBackgroundColor: meanTimeColor,
+                        backgroundColor: meanTimeColor,
+                        pointRadius: 1,
+                    },
+                ],
+            },
+            options: {
+                title: {
+                    display: true,
+                    text: "Block History",
+                },
+                scales: {
+                    yAxes: [{
+                        type: scaleType,
+                    }]
+                }
+            }
         });
         // Stats
         var avgSizekb = (cumSizekb / totalBlocks).toFixed(0);
@@ -223,6 +380,26 @@
         DOM.sizekb.textContent = avgSizekb;
         DOM.sizetxs.textContent = avgSizetxs;
         DOM.timing.textContent = avgTiming;
+    }
+
+    function setLargeCharts() {
+        var charts = [
+            DOM.sizeChart,
+            DOM.txlengthChart,
+            DOM.timingChart,
+            DOM.timeseriesChart,
+        ]
+        for (var i=0; i<charts.length; i++) {
+            var chart = charts[i];
+            if (DOM.largeCharts.checked) {
+                chart.classList.add("large-chart");
+                chart.classList.remove("col-md-6");
+            }
+            else {
+                chart.classList.remove("large-chart");
+                chart.classList.add("col-md-6");
+            }
+        }
     }
 
     function dateStr(unixTime) {
@@ -239,6 +416,39 @@
         else {
             element.fireEvent("on" + eventName);
         }
+    }
+
+    function monthForDate(d) {
+        return d.getYear() * 12 + d.getMonth();
+    }
+
+    function mean(a) {
+        var total = 0;
+        for (var i=0; i<a.length; i++) {
+            total += a[i];
+        }
+        return total / a.length;
+    }
+
+    function median(a) {
+        if (a.length < 1) {
+            return 0;
+        }
+        if (a.length % 2 == 0) {
+            var lo = a[a.length / 2 - 1];
+            var hi = a[a.length / 2];
+            return (lo + hi) / 2;
+        }
+        else {
+            return a[Math.floor(a.length / 2)]
+        }
+    }
+
+    function decimalPlaces(val, places) {
+        var multiplier = Math.pow(10, places);
+        var intVal = Math.round(val * multiplier);
+        var floatVal = intVal / multiplier;
+        return floatVal;
     }
 
     init();

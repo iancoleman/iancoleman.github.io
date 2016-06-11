@@ -7,6 +7,7 @@ new (function() {
 
     var oneDay = 60*60*24;
     var oneYear = oneDay*365;
+    var daysPerMonth = 365/12;
 
     var DOM = {};
     // Parameters
@@ -20,7 +21,11 @@ new (function() {
     DOM.suppliedDiskCapacity = select(".results .disk-consumption");
     DOM.processing = select(".results .processing");
     // Costs
+    DOM.bandwidthCostRow = select(".costs .bandwidth");
+    DOM.bandwidthErrorMsg = select(".costs .bandwidth .error");
     DOM.bandwidthType = select(".costs .bandwidth .type");
+    DOM.bandwidthCostPercent = select(".costs .bandwidth .percent .value");
+    DOM.bandwidthCostBar = select(".costs .bandwidth .bar");
     DOM.unlimited = select(".costs .unlimited");
     DOM.unlimitedPrice = select(".costs .unlimited .price");
     DOM.unlimitedTime = select(".costs .unlimited .time");
@@ -33,13 +38,21 @@ new (function() {
     DOM.diskSize = select(".costs .disk .size");
     DOM.diskPrice = select(".costs .disk .price");
     DOM.diskCost = select(".costs .disk .total");
+    DOM.diskCostPercent = select(".costs .disk .percent .value");
+    DOM.diskCostBar = select(".costs .disk .bar");
     DOM.finalTotal = select(".costs .final .total");
+    DOM.processingCostRow = select(".costs .processing");
+    DOM.processingErrorMsg = select(".costs .processing .error");
     DOM.processingPrice = select(".processing .price");
     DOM.processingRate = select(".processing .rate");
     DOM.processingCost = select(".processing .total");
+    DOM.processingCostPercent = select(".costs .processing .percent .value");
+    DOM.processingCostBar = select(".costs .processing .bar");
     DOM.laborHours = select(".labor .hours");
     DOM.laborPrice = select(".labor .price");
     DOM.laborCost = select(".labor .total");
+    DOM.laborCostPercent = select(".costs .labor .percent .value");
+    DOM.laborCostBar = select(".costs .labor .bar");
 
     function init() {
         setEvents();
@@ -66,6 +79,8 @@ new (function() {
         ];
         var onChangeEls = [
             DOM.bandwidthType,
+            DOM.cappedTime,
+            DOM.unlimitedTime,
         ];
         for (var i=0; i<onInputEls.length; i++) {
             onInputEls[i].addEventListener("input", render);
@@ -118,13 +133,14 @@ new (function() {
             DOM.unlimited.classList.remove("hidden");
             // validate numbers
             var availableSpeed = parseFloat(DOM.unlimitedSpeed.value);
+            // if impossible, show error
             if (availableSpeed < megabitsPerSecond) {
-                // TODO this is an impossible situation
-                // show an appropriate message
+                DOM.bandwidthCostRow.classList.add("impossible");
+                DOM.bandwidthErrorMsg.classList.remove("hidden");
             }
             else {
-                // TODO
-                // hide appropriate message
+                DOM.bandwidthCostRow.classList.remove("impossible");
+                DOM.bandwidthErrorMsg.classList.add("hidden");
             }
             // calculate annual cost
             var consumptionRatio = megabitsPerSecond / availableSpeed;
@@ -141,14 +157,15 @@ new (function() {
             var timeUnits = parseFloat(DOM.cappedTime.value);
             var unitsEachDay = oneDay / timeUnits;
             var availableEachDay = unitsEachDay * availableSize;
-            var availableEachMonth = availableEachDay * 31;
+            var availableEachMonth = availableEachDay * daysPerMonth;
+            // if impossible, show error
             if (availableEachMonth < gigabytesPerMonth) {
-                // TODO this is an impossible situation
-                // show an appropriate message
+                DOM.bandwidthCostRow.classList.add("impossible");
+                DOM.bandwidthErrorMsg.classList.remove("hidden");
             }
             else {
-                // TODO
-                // hide appropriate message
+                DOM.bandwidthCostRow.classList.remove("impossible");
+                DOM.bandwidthErrorMsg.classList.add("hidden");
             }
             // calculate annual cost
             var consumptionRatio = gigabytesPerMonth / availableEachMonth;
@@ -164,8 +181,16 @@ new (function() {
         var diskCost = diskPrice * diskRatio
         finalTotal += diskCost;
         // Processing cost
-        var processingPrice = parseFloat(DOM.processingPrice.value);
         var processingRate = parseFloat(DOM.processingRate.value);
+        if (processingRate < txsPerSecond) {
+            DOM.processingCostRow.classList.add("impossible");
+            DOM.processingErrorMsg.classList.remove("hidden");
+        }
+        else {
+            DOM.processingCostRow.classList.remove("impossible");
+            DOM.processingErrorMsg.classList.add("hidden");
+        }
+        var processingPrice = parseFloat(DOM.processingPrice.value);
         var processingRatio = txsPerSecond / processingRate;
         var yearsPerLife = 5;
         var processingCost = processingPrice * processingRatio / yearsPerLife;
@@ -185,6 +210,24 @@ new (function() {
         DOM.processingCost.textContent = processingCost.toLocaleString();
         DOM.laborCost.textContent = laborCost.toLocaleString();
         DOM.finalTotal.textContent = finalTotal.toLocaleString();
+        // Show bars
+        var largestCost = Math.max(bandwidthCost, processingCost, diskCost, laborCost);
+        var bandwidthBarSize = Math.round(bandwidthCost / largestCost * 100) + "%";
+        var bandwidthPercent = Math.round(bandwidthCost / finalTotal * 100) + "%";
+        DOM.bandwidthCostPercent.textContent = bandwidthPercent;
+        DOM.bandwidthCostBar.style.width = bandwidthBarSize;
+        var processingBarSize = Math.round(processingCost / largestCost * 100) + "%";
+        var processingPercent = Math.round(processingCost / finalTotal * 100) + "%";
+        DOM.processingCostPercent.textContent = processingPercent;
+        DOM.processingCostBar.style.width = processingBarSize;
+        var diskBarSize = Math.round(diskCost / largestCost * 100) + "%";
+        var diskPercent = Math.round(diskCost / finalTotal * 100) + "%";
+        DOM.diskCostPercent.textContent = diskPercent;
+        DOM.diskCostBar.style.width = diskBarSize;
+        var laborBarSize = Math.round(laborCost / largestCost * 100) + "%";
+        var laborPercent = Math.round(laborCost / finalTotal * 100) + "%";
+        DOM.laborCostPercent.textContent = laborPercent;
+        DOM.laborCostBar.style.width = laborBarSize;
     }
 
     init();
