@@ -78,10 +78,10 @@ function loadData() {
                 var monthIndex = parseFloat(monthSelector.value);
                 showMonth(monthIndex);
             });
-            monthSelector.focus();
             // Show chart
             loading.classList.add("hidden");
             loaded.classList.remove("hidden");
+            monthSelector.focus();
         }
     });
 }
@@ -150,7 +150,7 @@ function toBinData(a, min, max, step) {
             p = min;
         }
         // Put in bin
-        var binIndex = Math.round(((p - min) / range) * (bins.length-1));
+        var binIndex = Math.floor(((p - min) / range) * (bins.length-1));
         bins[binIndex] += 1;
     }
     return {
@@ -173,7 +173,7 @@ function binsToChart(binData, monthIndex) {
     // Normalize data
     var normBins = [];
     for (var i=0; i<bins.length; i++) {
-        normBins.push(Math.round(bins[i] / totalBlocks * 100));
+        normBins.push(Math.round(bins[i] / totalBlocks * 1000)/10);
     }
     // Return chartable format
     var response = {
