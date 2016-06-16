@@ -74,6 +74,22 @@
                 every
                 <input class="time form-control small" type="number" value="600" id="block-period" x-url-param>
                 seconds.
+                <br><br>
+                Each full node is connected to
+                <input class="peers form-control small" type="number" value="8" id="peers" x-url-param>
+                peers in a network of
+                <input class="nodes form-control small" type="number" value="4000" id="nodes" x-url-param>
+                nodes, requiring
+                <div class="popup">
+                    <span class="hops">?</span>
+                    hops<sup>?</sup>
+                    <div class="popup-content">
+                        <span>
+                            Depending on network topology.
+                        </span>
+                    </div>
+                </div>
+                to fully broadcast a block.
             </div>
             <div>
                 <h2>Constraints</h2>
@@ -89,7 +105,13 @@
                         <tr>
                             <td>Bandwidth</td>
                             <td>must be at least</td>
-                            <td class="bandwidth">?</td>
+                            <td class="bandwidth">
+                                <table>
+                                    <tr><td class="text-right">Total: </td><td class="total">?</td></tr>
+                                    <tr><td class="text-right">Down: </td><td class="down">?</td></tr>
+                                    <tr><td class="text-right">Up: </td><td class="up">?</td></tr>
+                                </table>
+                            </td>
                             <td>Mbps</td>
                         </tr>
                         <tr>
@@ -154,7 +176,7 @@
                             <th>Price</th>
                             <th>Info</th>
                             <th class="text-right">Annual Cost</th>
-                            <th>% Cost</th>
+                            <th>%&nbsp;Cost</th>
                         </thead>
                         <tbody>
                             <tr class="bandwidth">
@@ -181,7 +203,10 @@
                                         </select>
                                         for
                                         $<input class="price form-control small" value="49.99" type="number" id="capped-price" x-url-param>
-                                    </div>
+                                        at a speed of
+                                        <input class="speed form-control small" value="100" type="number" id="capped-speed" x-url-param>
+                                        Mbps
+                                   </div>
                                     <div class="unlimited options hidden">
                                         bandwidth for
                                         $<input class="price form-control small" value="70" type="number" id="unlimited-price" x-url-param>
@@ -197,6 +222,8 @@
                                         <input class="speed form-control small" value="100" type="number" id="unlimited-speed" x-url-param>
                                         Mbps
                                     </div>
+                                    with an orphan rate of
+                                    <span class="orphan-rate">?</span>%
                                 </td>
                                 <td class="popup text-center" title="">
                                     <p class="form-control-static">&plus;</p>

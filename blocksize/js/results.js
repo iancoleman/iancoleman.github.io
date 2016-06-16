@@ -15,8 +15,13 @@ new (function() {
     DOM.blocks = select(".parameters .blocks");
     DOM.blockGrammar = select(".parameters .block-grammar");
     DOM.time = select(".parameters .time");
+    DOM.peers = select(".parameters .peers");
+    DOM.nodes = select(".parameters .nodes");
+    DOM.hops = select(".parameters .hops");
     // Results
-    DOM.bandwidth = select(".results .bandwidth");
+    DOM.bandwidthTotal = select(".results .bandwidth .total");
+    DOM.bandwidthDown = select(".results .bandwidth .down");
+    DOM.bandwidthUp = select(".results .bandwidth .up");
     DOM.dataCap = select(".results .data-cap");
     DOM.suppliedDiskCapacity = select(".results .disk-consumption");
     DOM.processing = select(".results .processing");
@@ -34,7 +39,9 @@ new (function() {
     DOM.cappedSize = select(".costs .capped .size");
     DOM.cappedTime = select(".costs .capped .time");
     DOM.cappedPrice = select(".costs .capped .price");
+    DOM.cappedSpeed = select(".costs .capped .speed");
     DOM.bandwidthCost = select(".costs .bandwidth .total");
+    DOM.orphanRate = select(".costs .orphan-rate");
     DOM.diskSize = select(".costs .disk .size");
     DOM.diskPrice = select(".costs .disk .price");
     DOM.diskCost = select(".costs .disk .total");
@@ -70,12 +77,15 @@ new (function() {
             DOM.cappedSize,
             DOM.cappedTime,
             DOM.cappedPrice,
+            DOM.cappedSpeed,
             DOM.diskSize,
             DOM.diskPrice,
             DOM.processingPrice,
             DOM.processingRate,
             DOM.laborHours,
             DOM.laborPrice,
+            DOM.peers,
+            DOM.nodes,
         ];
         var onChangeEls = [
             DOM.bandwidthType,
@@ -92,9 +102,11 @@ new (function() {
 
     function render() {
         // parameters
-        var size = parseFloat(DOM.size.value);
+        var megabytesPerBlock = parseFloat(DOM.size.value);
         var blocks = parseFloat(DOM.blocks.value);
         var time = parseFloat(DOM.time.value);
+        var peers = parseFloat(DOM.peers.value);
+        var nodes = parseFloat(DOM.nodes.value);
         // grammar
         if (blocks == 1) {
             DOM.blockGrammar.textContent = "block";
@@ -103,28 +115,35 @@ new (function() {
             DOM.blockGrammar.textContent = "blocks";
         }
         // calculations
+        // hops
+        var hops = numberOfHops(nodes, peers);
         // results
-        // bandwidth
-        var megabitsPerBlock = size * 8;
+        // bandwidth - assumes full block downloaded before sending to next hop
+        var megabitsPerBlock = megabytesPerBlock * 8;
         var blocksPerSecond = blocks / time;
-        var megabitsPerSecond = megabitsPerBlock * blocksPerSecond;
+        var megabitsPerSecondDown = megabitsPerBlock * blocksPerSecond * hops;
+        var megabitsPerSecondUp = megabitsPerBlock * blocksPerSecond * (peers - 1) * hops;
+        var megabitsPerSecondTotal = megabitsPerSecondUp + megabitsPerSecondDown;
         // data cap
         var secondsPerMonth = 60*60*24*31;
-        var megabitsPerMonth = megabitsPerSecond * secondsPerMonth;
-        var gigabytesPerMonth = megabitsPerMonth / 8 / 1000;
+        var blocksPerMonth = secondsPerMonth * blocksPerSecond;
+        var megabytesPerMonth = blocksPerMonth * megabytesPerBlock * peers;
+        var gigabytesPerMonth = megabytesPerMonth / 1000;
         // supplied disk capacity
         var secondsPerYear = 60*60*24*365;
-        var megabitsPerYear = megabitsPerSecond * secondsPerYear;
-        var gigabytesPerYear = megabitsPerYear / 8 / 1000;
+        var blocksPerYear = secondsPerYear * blocksPerSecond;
+        var megabytesPerYear = blocksPerYear * megabytesPerBlock;
+        var gigabytesPerYear = megabytesPerYear / 1000;
         // processing
         var minTxSize = 226; // bytes
-        var bytesPerBlock = size * 1000 * 1000;
+        var bytesPerBlock = megabytesPerBlock * 1000 * 1000;
         var txsPerBlock = bytesPerBlock / minTxSize;
         var txsPerSecond = txsPerBlock * blocksPerSecond;
         // costs
         var finalTotal = 0;
         var bandwidthType = DOM.bandwidthType.value;
         var bandwidthCost = 0;
+        var orphanRate = 0;
         // bandwidth cost options
         DOM.unlimited.classList.add("hidden");
         DOM.capped.classList.add("hidden");
@@ -134,16 +153,19 @@ new (function() {
             // validate numbers
             var availableSpeed = parseFloat(DOM.unlimitedSpeed.value);
             // if impossible, show error
-            if (availableSpeed < megabitsPerSecond) {
-                DOM.bandwidthCostRow.classList.add("impossible");
+            if (availableSpeed < megabitsPerSecondTotal) {
+                DOM.unlimitedSpeed.classList.add("impossible");
                 DOM.bandwidthErrorMsg.classList.remove("hidden");
             }
             else {
-                DOM.bandwidthCostRow.classList.remove("impossible");
+                DOM.unlimitedSpeed.classList.remove("impossible");
                 DOM.bandwidthErrorMsg.classList.add("hidden");
             }
+            // calculate orphan rate
+            var secondsToGetBlock = megabitsPerBlock / availableSpeed;
+            orphanRate = chanceOfNewBlock(secondsToGetBlock, time);
             // calculate annual cost
-            var consumptionRatio = megabitsPerSecond / availableSpeed;
+            var consumptionRatio = megabitsPerSecondTotal / availableSpeed;
             var unitPrice = parseFloat(DOM.unlimitedPrice.value);
             var timeUnits = parseFloat(DOM.unlimitedTime.value);
             var unitsEachYear = oneYear / timeUnits;
@@ -158,15 +180,31 @@ new (function() {
             var unitsEachDay = oneDay / timeUnits;
             var availableEachDay = unitsEachDay * availableSize;
             var availableEachMonth = availableEachDay * daysPerMonth;
+            var availableSpeed = parseFloat(DOM.cappedSpeed.value);
             // if impossible, show error
-            if (availableEachMonth < gigabytesPerMonth) {
-                DOM.bandwidthCostRow.classList.add("impossible");
+            var impossibleSize = availableEachMonth < gigabytesPerMonth;
+            var impossibleSpeed = availableSpeed < megabitsPerSecondTotal;
+            if (impossibleSize || impossibleSpeed) {
                 DOM.bandwidthErrorMsg.classList.remove("hidden");
             }
             else {
-                DOM.bandwidthCostRow.classList.remove("impossible");
                 DOM.bandwidthErrorMsg.classList.add("hidden");
             }
+            if (impossibleSize) {
+                DOM.cappedSize.classList.add("impossible");
+            }
+            else {
+                DOM.cappedSize.classList.remove("impossible");
+            }
+            if (impossibleSpeed) {
+                DOM.cappedSpeed.classList.add("impossible");
+            }
+            else {
+                DOM.cappedSpeed.classList.remove("impossible");
+            }
+            // calculate orphan rate
+            var secondsToGetBlock = megabitsPerBlock / availableSpeed;
+            orphanRate = chanceOfNewBlock(secondsToGetBlock, time);
             // calculate annual cost
             var consumptionRatio = gigabytesPerMonth / availableEachMonth;
             var unitsEachYear = oneYear / timeUnits;
@@ -183,11 +221,11 @@ new (function() {
         // Processing cost
         var processingRate = parseFloat(DOM.processingRate.value);
         if (processingRate < txsPerSecond) {
-            DOM.processingCostRow.classList.add("impossible");
+            DOM.processingRate.classList.add("impossible");
             DOM.processingErrorMsg.classList.remove("hidden");
         }
         else {
-            DOM.processingCostRow.classList.remove("impossible");
+            DOM.processingRate.classList.remove("impossible");
             DOM.processingErrorMsg.classList.add("hidden");
         }
         var processingPrice = parseFloat(DOM.processingPrice.value);
@@ -201,10 +239,15 @@ new (function() {
         var laborCost = laborPrice * laborHours;
         finalTotal += laborCost;
         // show results
-        DOM.bandwidth.textContent = megabitsPerSecond.toLocaleString();
+        DOM.hops.textContent = hops.toLocaleString();
+        DOM.bandwidthTotal.textContent = megabitsPerSecondTotal.toLocaleString();
+        DOM.bandwidthDown.textContent = megabitsPerSecondDown.toLocaleString();
+        DOM.bandwidthUp.textContent = megabitsPerSecondUp.toLocaleString();
         DOM.dataCap.textContent = gigabytesPerMonth.toLocaleString();
         DOM.suppliedDiskCapacity.textContent = gigabytesPerYear.toLocaleString();
         DOM.processing.textContent = txsPerSecond.toLocaleString();
+        DOM.orphanRate.textContent = (orphanRate * 100).toFixed(1);
+        DOM.orphanRate.title = (orphanRate * 100).toFixed(5) + "%";
         DOM.bandwidthCost.textContent = bandwidthCost.toLocaleString();
         DOM.diskCost.textContent = diskCost.toLocaleString();
         DOM.processingCost.textContent = processingCost.toLocaleString();
@@ -228,6 +271,21 @@ new (function() {
         var laborPercent = Math.round(laborCost / finalTotal * 100) + "%";
         DOM.laborCostPercent.textContent = laborPercent;
         DOM.laborCostBar.style.width = laborBarSize;
+    }
+
+    function chanceOfNewBlock(timeSinceLastBlock, avgBlockTime) {
+        // See
+        // https://en.bitcoin.it/wiki/Confirmation#Confirmation_Times
+        // http://bitcoin.stackexchange.com/a/43592
+        return 1 - Math.exp(-1*(timeSinceLastBlock / avgBlockTime));
+    }
+
+    function numberOfHops(totalNodes, connectionsPerNode) {
+        // Assuming that there are no cycles (not a good assumption).
+        // Need to account for network topology.
+        // The current algorithm used here is too optimistic.
+        // Most likely there would be more hops than this to fully propagate.
+        return Math.ceil(Math.log(totalNodes) / Math.log(connectionsPerNode));
     }
 
     init();
