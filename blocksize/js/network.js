@@ -11,13 +11,16 @@ network = new (function() {
     DOM.nodes = $(".parameters .nodes");
     DOM.blockGrammar = $(".parameters .block-grammar");
     DOM.finalTotal = $(".costs .final .total");
+    DOM.hop1Nodes = $(".parameters .hop-1-nodes");
+    DOM.hop2Nodes = $(".parameters .hop-2-nodes");
     DOM.hopNNodes = $(".parameters .hop-n-nodes");
     DOM.static = {};
     DOM.static.hops = $(".hops");
     DOM.static.size = $(".results span.block-size");
     DOM.static.blocks = $(".results span.blocks");
     DOM.static.time = $(".results span.time");
-    DOM.static.peers = $(".results span.peers");
+    DOM.static.peers = $("span.peers");
+    DOM.static.minTxSize = $("span.min-tx-size");
 
     DOM.bandwidthCostPercent = $(".costs .bandwidth .percent .value");
     DOM.bandwidthCostBar = $(".costs .bandwidth .bar");
@@ -88,7 +91,7 @@ network = new (function() {
 
         self.txsPerBlock = self.bytesPerBlock / self.minTxSize;
 
-        self.txsPerSecond = self.txsPerBlock * self.blocksPerSecond;
+        self.txsPerSecond = self.txsPerBlock * self.blocksPerSecond * self.numberOfHops;
 
         self.totalCosts = 0;
 
@@ -106,11 +109,14 @@ network = new (function() {
             DOM.blockGrammar.text("blocks");
         }
         DOM.static.hops.text(self.numberOfHops.toLocaleString());
+        DOM.hop1Nodes.text(self.connectedPeers.toLocaleString());
+        DOM.hop2Nodes.text((Math.pow(self.connectedPeers, 2)).toLocaleString());
         DOM.hopNNodes.text(self.maxNodesForHops.toLocaleString());
         DOM.static.size.text(self.megabytesPerBlock);
         DOM.static.blocks.text(self.blocksPerSecondNumerator);
         DOM.static.time.text(self.blocksPerSecondDenominator);
         DOM.static.peers.text(self.connectedPeers);
+        DOM.static.minTxSize.text(self.minTxSize);
         DOM.finalTotal.text(self.totalCosts.toLocaleString());
 
         // Show proportionality bars on viability costs
