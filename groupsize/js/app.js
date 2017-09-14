@@ -178,7 +178,12 @@
     }
 
     DOM["chance-of-attack-interruption"].string = function() {
-        return (DOM["chance-of-attack-interruption"].calculation() * 100).toFixed(3);
+        var chance = DOM["chance-of-attack-interruption"].calculation() * 100;
+        var chanceStr = chance.toFixed(3);
+        if (chance > 99.999) {
+            chanceStr = "greater than 99.999"
+        }
+        return chanceStr;
     }
 
     for (var selector in DOM) {
