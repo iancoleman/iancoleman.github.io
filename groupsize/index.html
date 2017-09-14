@@ -460,7 +460,7 @@
                             There's a (1-p) chance of <em>not</em> joining the target group on the first try.
                         </li>
                         <li>
-                            There's a (1-p)<sup>?</sup> chance of <em>not</em> joining the target group on the second try.
+                            There's a (1-p)<sup>2</sup> chance of <em>not</em> joining the target group on the second try.
                         </li>
                         <li>
                             There's a (1-p)<sup>n</sup> chance of <em>not</em> joining the target group on the nth try.
@@ -666,16 +666,16 @@
                         The chance of the interrupt joining the target group is 1/<span data-calculate="groupcount">?</span> (call this probability 'p')
                         </li>
                         <li>
-                        The chance of the first interrupt <em>not</em> joining the target group is 1-1/p
+                        The chance of the first interrupt <em>not</em> joining the target group is 1-p
                         </li>
                         <li>
-                        The chance of the second interrupt <em>not</em> joining the target group is (1-1/p)<sup>?</sup>
+                        The chance of the second interrupt <em>not</em> joining the target group is (1-p)<sup>2</sup>
                         </li>
                         <li>
-                        The chance of the nth interrupt <em>not</em> joining the target group is (1-1/p)<sup>n</sup>
+                        The chance of the nth interrupt <em>not</em> joining the target group is (1-p)<sup>n</sup>
                         </li>
                         <li>
-                        The chance of the nth interrupt <em>joining</em> the target group is 1-(1-1/p)<sup>n</sup>
+                        The chance of the nth interrupt <em>joining</em> the target group is 1-(1-p)<sup>n</sup>
                         </li>
                         </ul>
                     </div>
