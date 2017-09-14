@@ -36,13 +36,13 @@
     DOM["quorumsize-average"].calculation = function() {
         var groupsizeAvg = DOM["groupsize-average"].calculation();
         var quorumratio = DOM["quorumratio"].calculation();
-        return Math.ceil(groupsizeAvg * quorumratio);
+        return Math.floor(groupsizeAvg * quorumratio) + 1;
     }
 
     DOM["quorumsize-minimum"].calculation = function() {
         var groupsizeMin = DOM["groupsize-minimum"].calculation();
         var quorumratio = DOM["quorumratio"].calculation();
-        return Math.ceil(groupsizeMin * quorumratio);
+        return Math.floor(groupsizeMin * quorumratio) + 1;
     }
 
     DOM["joinchance-worstcase"].calculation = function() {

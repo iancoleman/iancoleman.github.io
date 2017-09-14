@@ -146,15 +146,16 @@
                     <span data-calculate="quorumsize-average">?</span> vaults
                     <div class="popup-content">
                         <div>
-                            ceiling(<span data-calculate="groupsize-average">?</span> vaults per group
+                            floor(<span data-calculate="groupsize-average">?</span> vaults per group
                             &times;
                             <span data-calculate="quorumratio">?</span> quorum ratio)
+                            + 1
                             =
                             <span data-calculate="quorumsize-average">?</span> vaults for quorum
                         </div>
                         <br>
                         <div>
-                            =<span data-calculate="groupsize-average">?</span>*<span data-calculate="quorumratio">?</span>
+                            =floor(<span data-calculate="groupsize-average">?</span>*<span data-calculate="quorumratio">?</span>)+1
                         </div>
                     </div>
                 </div>
@@ -166,15 +167,16 @@
                     <span data-calculate="quorumsize-minimum">?</span> vaults
                     <div class="popup-content">
                         <div>
-                            ceiling(<span data-calculate="groupsize-minimum">?</span> vaults per group
+                            floor(<span data-calculate="groupsize-minimum">?</span> vaults per group
                             &times;
                             <span data-calculate="quorumratio">?</span> quorum ratio)
+                            + 1
                             =
                             <span data-calculate="quorumsize-minimum">?</span> vaults for quorum
                         </div>
                         <br>
                         <div>
-                            =<span data-calculate="groupsize-minimum">?</span>*<span data-calculate="quorumratio">?</span>
+                            =floor(<span data-calculate="groupsize-minimum">?</span>*<span data-calculate="quorumratio">?</span>)+1
                         </div>
                     </div>
                 </div>
